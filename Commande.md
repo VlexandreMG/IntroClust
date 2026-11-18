@@ -1,0 +1,2 @@
+<!-- Lancer un serveur  -->
+python3 -m http.server 8081 --directory "./serveur A" &
