@@ -1,0 +1,57 @@
+services:
+  mysql-primary:
+    image: mysql:8.4
+    container_name: mysql-primary
+    env_file: .env
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_primary_data:/var/lib/mysql
+      - ./mysql/primary.cnf:/etc/mysql/conf.d/primary.cnf:ro
+      - ./mysql/init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -uroot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    networks: [mysqlnet]
+
+  mysql-replica:
+    image: mysql:8.4
+    container_name: mysql-replica
+    env_file: .env
+    depends_on:
+      mysql-primary:
+        condition: service_healthy
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql_replica_data:/var/lib/mysql
+      - ./mysql/replica.cnf:/etc/mysql/conf.d/replica.cnf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -uroot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    networks: [mysqlnet]
+
+  replica-setup:
+    image: mysql:8.4
+    env_file: .env
+    depends_on:
+      mysql-replica:
+        condition: service_healthy
+    entrypoint: ["bash", "/setup-replica.sh"]
+    volumes:
+      - ./mysql/setup-replica.sh:/setup-replica.sh:ro
+    restart: "no"
+    networks: [mysqlnet]
+
+volumes:
+  mysql_primary_data:
+  mysql_replica_data:
+
+networks:
+  mysqlnet:
