@@ -1,4 +1,9 @@
 docker compose up -d
+# Entree primary 
+docker exec -it mysql-primary mysql -uroot -pchange_me
+
+# Entree replica
+docker exec -it mysql-replica mysql -uroot -pchange_me
 
 # Creer un utilisateur avec les droits de réplication sur le primaire
 docker exec -it mysql-primary mysql -uroot -pchange_me -e "CREATE USER 'replicator'@'%' IDENTIFIED BY 'change_me_too'; GRANT REPLICATION SLAVE ON *.* TO 'replicator'@'%'; FLUSH PRIVILEGES;"
